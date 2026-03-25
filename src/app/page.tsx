@@ -8,14 +8,14 @@ export default function HomePage(): React.JSX.Element {
   return (
     <div className="min-h-screen bg-transparent">
       <main className="flex-grow flex flex-col">
-        {/* ── Hero: spotlight + Spline 3D + search + pills ── */}
-        <HeroSection />
+        {/* ── 3D Futuristic robot section — first above the fold ── */}
+        <HeroFuturisticSection />
 
         {/* ── Scrolling marquee ── */}
         <Marquee />
 
-        {/* ── 3D Futuristic depth-map animation ── */}
-        <HeroFuturisticSection />
+        {/* ── Hero: wrist animation + search + pills ── */}
+        <HeroSection />
 
         {/* ── Animated bento "Curated Collections" ── */}
         <BentoSectionWrapper />
