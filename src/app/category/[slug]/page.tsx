@@ -2,6 +2,10 @@ import { redirect } from "next/navigation";
 import { categories, type CategoryKey } from "@/lib/data/categories";
 import { CategoryPageClient } from "@/components/ui/category-page-client";
 
+export function generateStaticParams(): { slug: string }[] {
+  return Object.keys(categories).map((slug) => ({ slug }));
+}
+
 interface Props {
   params: Promise<{ slug: string }>;
 }

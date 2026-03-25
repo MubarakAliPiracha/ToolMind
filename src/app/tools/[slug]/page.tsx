@@ -1,6 +1,15 @@
 import { notFound } from "next/navigation";
-import { findToolByPageSlug } from "@/lib/tool-slug";
+import { categories, type CategoryKey } from "@/lib/data/categories";
+import { findToolByPageSlug, makeToolPageSlug } from "@/lib/tool-slug";
 import { ToolDetailClient } from "@/components/ui/tool-detail-client";
+
+export function generateStaticParams(): { slug: string }[] {
+  return (Object.keys(categories) as CategoryKey[]).flatMap((key) =>
+    categories[key].tools.map((tool) => ({
+      slug: makeToolPageSlug(key, tool.name),
+    }))
+  );
+}
 
 interface Props {
   params: Promise<{ slug: string }>;

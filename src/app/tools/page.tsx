@@ -1,15 +1,20 @@
 "use client";
 
 import { useState, useRef, useMemo, Suspense } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Footer } from "@/components/ui/footer";
 import { FadeUpContainer, FadeUpItem } from "@/components/ui/motion";
 import { ToolCard, type Pricing } from "@/components/ui/tool-card";
 import { categories, type CategoryKey } from "@/lib/data/categories";
 import { makeToolPageSlug } from "@/lib/tool-slug";
-import { scoreToolForTask, MINIMUM_MATCH_SCORE } from "@/lib/task-match";
+import {
+  scoreToolForTask,
+  lexicalMatchScore,
+  MINIMUM_MATCH_SCORE,
+  MINIMUM_LEXICAL_SCORE,
+} from "@/lib/task-match";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut";
 import { cn } from "@/lib/utils";
@@ -80,25 +85,69 @@ function ToolsDirectoryPage(): React.JSX.Element {
   // Press "/" to focus the search input
   useKeyboardShortcut("/", () => searchInputRef.current?.focus());
 
-  const filtered = useMemo(() => {
+  const { directoryRows, searchHint } = useMemo(() => {
     const categoryFiltered = ALL_TOOLS.filter(
       (tool) => activeCategory === "all" || tool.categorySlug === activeCategory
     );
 
-    if (query === "") return categoryFiltered.map((tool) => ({ tool, score: undefined }));
+    if (query === "") {
+      return {
+        directoryRows: categoryFiltered.map((tool) => ({ tool, score: undefined as number | undefined })),
+        searchHint: undefined as undefined | "lexical" | "all",
+      };
+    }
 
-    const scored = categoryFiltered
+    const scored = categoryFiltered.map((tool) => ({
+      tool,
+      score: scoreToolForTask(
+        {
+          categorySlug: tool.categorySlug,
+          categoryName: tool.category,
+          name: tool.name,
+          bestFor: tool.description,
+        },
+        query
+      ),
+    }));
+
+    const strict = scored
+      .filter(({ score }) => score >= MINIMUM_MATCH_SCORE)
+      .sort((a, b) => b.score - a.score);
+
+    if (strict.length > 0) {
+      return {
+        directoryRows: strict.map(({ tool, score }) => ({ tool, score })),
+        searchHint: undefined,
+      };
+    }
+
+    const lexicalRanked = categoryFiltered
       .map((tool) => ({
         tool,
-        score: scoreToolForTask(
-          { categorySlug: tool.categorySlug, categoryName: tool.category, name: tool.name, bestFor: tool.description },
+        score: lexicalMatchScore(
+          {
+            categorySlug: tool.categorySlug,
+            categoryName: tool.category,
+            name: tool.name,
+            bestFor: tool.description,
+          },
           query
         ),
       }))
-      .filter(({ score }) => score >= MINIMUM_MATCH_SCORE);
+      .filter(({ score }) => score >= MINIMUM_LEXICAL_SCORE)
+      .sort((a, b) => b.score - a.score);
 
-    scored.sort((a, b) => b.score - a.score);
-    return scored;
+    if (lexicalRanked.length > 0) {
+      return {
+        directoryRows: lexicalRanked.map(({ tool, score }) => ({ tool, score })),
+        searchHint: "lexical" as const,
+      };
+    }
+
+    return {
+      directoryRows: categoryFiltered.map((tool) => ({ tool, score: undefined as number | undefined })),
+      searchHint: "all" as const,
+    };
   }, [query, activeCategory]);
 
   return (
@@ -269,31 +318,58 @@ function ToolsDirectoryPage(): React.JSX.Element {
               <div className="max-w-7xl mx-auto">
                 {/* Animated result count */}
                 <motion.div
-                  key={`${filtered.length}-${activeCategory}-${query}`}
+                  key={`${directoryRows.length}-${activeCategory}-${query}-${searchHint ?? "none"}`}
                   initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="mb-6 flex items-center gap-3"
+                  className="mb-6 flex flex-col gap-2"
                 >
-                  <span className="red-glow-text font-mono text-[11px] uppercase tracking-widest">
-                    {filtered.length} result{filtered.length !== 1 ? "s" : ""}
-                  </span>
-                  {activeCategory !== "all" && (
-                    <span className="red-glow-text font-label text-[10px] uppercase tracking-widest">
-                      in {categories[activeCategory as CategoryKey]?.name ?? activeCategory}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="red-glow-text font-mono text-[11px] uppercase tracking-widest">
+                      {directoryRows.length} result{directoryRows.length !== 1 ? "s" : ""}
                     </span>
+                    {activeCategory !== "all" && (
+                      <span className="red-glow-text font-label text-[10px] uppercase tracking-widest">
+                        in {categories[activeCategory as CategoryKey]?.name ?? activeCategory}
+                      </span>
+                    )}
+                    {query && (
+                      <span className="red-glow-text font-label text-[10px] uppercase tracking-widest">
+                        · matching &ldquo;{query}&rdquo;
+                      </span>
+                    )}
+                  </div>
+                  {query && searchHint === "lexical" && (
+                    <p className="text-white/35 font-label text-[10px] uppercase tracking-widest max-w-2xl">
+                      Looser word match — try a more specific task for tighter ranking.
+                    </p>
                   )}
-                  {query && (
-                    <span className="red-glow-text font-label text-[10px] uppercase tracking-widest">
-                      · matching &ldquo;{query}&rdquo;
-                    </span>
+                  {query && searchHint === "all" && (
+                    <p className="text-white/35 font-label text-[10px] uppercase tracking-widest max-w-2xl">
+                      No overlap with tool text — showing every tool in this view. Clear search or try other keywords.
+                    </p>
                   )}
                 </motion.div>
+
+                {/* Compare Top Tools shortcut — appears when query yields ≥2 results */}
+                {query && directoryRows.length >= 2 && (
+                  <div className="mb-6">
+                    <Link
+                      href={`/compare?tools=${directoryRows.slice(0, Math.min(3, directoryRows.length)).map((r) => encodeURIComponent(r.tool.name)).join(",")}&task=${encodeURIComponent(query)}`}
+                      className="inline-flex items-center gap-2 px-4 py-2 border border-white/[0.10] rounded-sm font-label text-[11px] uppercase tracking-widest text-white/50 hover:text-white/80 hover:border-white/25 transition-all duration-150"
+                    >
+                      Compare top {Math.min(3, directoryRows.length)} tools
+                      <svg className="w-3 h-3" fill="none" strokeWidth={2} stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                      </svg>
+                    </Link>
+                  </div>
+                )}
 
                 {/* Cards grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   <AnimatePresence mode="popLayout">
-                    {filtered.map(({ tool, score }, i) => (
+                    {directoryRows.map(({ tool, score }, i) => (
                       <motion.div
                         key={tool.slug}
                         layout
@@ -321,7 +397,7 @@ function ToolsDirectoryPage(): React.JSX.Element {
                   </AnimatePresence>
                 </div>
 
-                {filtered.length === 0 && (
+                {directoryRows.length === 0 && query && (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}

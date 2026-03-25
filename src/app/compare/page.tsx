@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { MagnifyingGlass, X, CaretDown, Trophy, ArrowRight } from "@phosphor-icons/react";
 import { Footer } from "@/components/ui/footer";
@@ -126,15 +127,40 @@ function ScoreBar({ score, animate, isWinner }: { score: number; animate: boolea
 
 // ─── Main page ───────────────────────────────────────────────────────────────
 
-export default function ComparePage(): React.JSX.Element {
+function ComparePage(): React.JSX.Element {
+  const searchParams = useSearchParams();
   const [selectedTools, setSelectedTools] = useState<ToolInfo[]>([]);
   const [task, setTask] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [hasCompared, setHasCompared] = useState(false);
   const [animateBars, setAnimateBars] = useState(false);
+  const [copied, setCopied] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+  const initializedRef = useRef(false);
+
+  // Pre-populate from URL params (e.g. from /tools "Compare Top Tools" button)
+  useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
+    const toolsParam = searchParams.get("tools");
+    const taskParam = searchParams.get("task");
+
+    if (toolsParam) {
+      const names = toolsParam.split(",").map((n) => decodeURIComponent(n.trim()));
+      const resolved = names
+        .map((name) => ALL_TOOLS.find((t) => t.name.toLowerCase() === name.toLowerCase()))
+        .filter((t): t is ToolInfo => t !== undefined)
+        .slice(0, 3);
+      if (resolved.length > 0) setSelectedTools(resolved);
+    }
+
+    if (taskParam) {
+      setTask(decodeURIComponent(taskParam));
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -183,7 +209,26 @@ export default function ComparePage(): React.JSX.Element {
     }, 100);
   }
 
+  function handleShare(): void {
+    const toolNames = selectedTools.map((t) => encodeURIComponent(t.name)).join(",");
+    const url = `${window.location.origin}/compare?tools=${toolNames}&task=${encodeURIComponent(task)}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      const el = document.createElement("input");
+      el.value = url;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
   const canCompare = selectedTools.length >= 2 && task.trim().length > 3;
+  const tableMinWidth = `${200 + selectedTools.length * 220}px`;
 
   return (
     <div className="min-h-screen bg-transparent">
@@ -201,18 +246,18 @@ export default function ComparePage(): React.JSX.Element {
 
           <div className="font-label text-[10px] uppercase tracking-[0.3em] text-white/30 mb-4 flex items-center gap-2">
             <span className="inline-block w-4 h-px bg-white/20" />
-            Intelligence Juxtaposed
+            Task-specific verdict
           </div>
           <h1 className="font-headline font-bold text-5xl md:text-7xl tracking-tight leading-none mb-6 text-white">
-            Compare{" "}
+            Which tool{" "}
             <span className="text-white text-glow-lime relative">
-              Any Tool.
+              actually wins?
               <span className="absolute inset-0 blur-2xl bg-white/10 -z-10" />
             </span>
           </h1>
           <p className="max-w-xl text-white/45 font-body leading-relaxed text-lg">
-            Select up to 3 AI tools, describe your task, and get an objective
-            breakdown of which tool is best for exactly what you need.
+            Select up to 3 AI tools, describe your task, and get a task-specific
+            verdict on which tool is the strongest match for exactly what you need.
           </p>
         </motion.header>
 
@@ -343,7 +388,7 @@ export default function ComparePage(): React.JSX.Element {
                             <span className="flex-1 min-w-0">
                               <span className="block font-label text-sm font-semibold truncate">{tool.name}</span>
                               <span className="block font-label text-xs uppercase tracking-widest text-white/55">
-                                {tool.category} · {tool.bestFor}
+                                {tool.category} · {tool.bestFor.split(",")[0]}
                               </span>
                             </span>
                             {isSelected && (
@@ -468,129 +513,133 @@ export default function ComparePage(): React.JSX.Element {
                 <div className="flex-1 h-px bg-gradient-to-r from-white/[0.08] to-transparent" />
               </div>
 
-              {/* ── Comparison Grid ── */}
-              <div className="red-border-pulse relative border rounded-2xl overflow-hidden mb-12 bg-[#080808]">
-                <GlowingEffect disabled={false} spread={50} proximity={80} inactiveZone={0.05} />
-                {/* Header row */}
-                <div
-                  className="grid border-b border-white/[0.08]"
-                  style={{ gridTemplateColumns: `200px repeat(${selectedTools.length}, 1fr)` }}
-                >
-                  <div className="p-6 bg-[#060606] flex items-end">
-                    <span className="font-label text-xs uppercase tracking-widest text-white/55">Parameter</span>
-                  </div>
-                  {selectedTools.map((tool, i) => (
+              {/* ── Comparison Grid — mobile scrolls horizontally ── */}
+              <div className="overflow-x-auto pb-2 mb-12">
+                <div style={{ minWidth: tableMinWidth }}>
+                  <div className="red-border-pulse relative border rounded-2xl overflow-hidden bg-[#080808]">
+                    <GlowingEffect disabled={false} spread={50} proximity={80} inactiveZone={0.05} />
+                    {/* Header row */}
                     <div
-                      key={tool.name}
-                      className={cn(
-                        "p-6 border-l border-white/[0.08] relative overflow-hidden transition-colors",
-                        i === winnerIndex
-                          ? "bg-white/[0.05]"
-                          : "bg-[#0c0c0c]"
-                      )}
+                      className="grid border-b border-white/[0.08]"
+                      style={{ gridTemplateColumns: `180px repeat(${selectedTools.length}, 1fr)` }}
                     >
-                      {i === winnerIndex && (
-                        <>
-                          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/50 to-transparent" />
-                          <div className={cn("absolute inset-0 opacity-5 bg-gradient-to-b from-white to-transparent pointer-events-none")} />
-                        </>
-                      )}
-                      <div className="flex items-center gap-3 mb-4 relative">
+                      <div className="p-5 bg-[#060606] flex items-end">
+                        <span className="font-label text-xs uppercase tracking-widest text-white/55">Parameter</span>
+                      </div>
+                      {selectedTools.map((tool, i) => (
                         <div
+                          key={tool.name}
                           className={cn(
-                            "w-11 h-11 border flex items-center justify-center rounded-xl shrink-0 shadow-lg",
-                            CATEGORY_ACCENT[tool.categorySlug] ?? "bg-white/[0.04] text-white/40 border-white/[0.06]",
-                            CATEGORY_GLOW[tool.categorySlug]
+                            "p-5 border-l border-white/[0.08] relative overflow-hidden transition-colors",
+                            i === winnerIndex
+                              ? "bg-white/[0.05]"
+                              : "bg-[#0c0c0c]"
                           )}
                         >
-                          <span className="font-mono text-sm font-bold">{tool.code}</span>
-                        </div>
-                        <div>
-                          <h3 className="red-text-pulse font-headline text-lg font-bold leading-tight">{tool.name}</h3>
                           {i === winnerIndex && (
-                            <span className="font-label text-[9px] uppercase tracking-widest text-white/50 flex items-center gap-1">
-                              <Trophy size={9} weight="fill" className="text-amber-400/70" />
-                              Best match
-                            </span>
+                            <>
+                              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+                              <div className={cn("absolute inset-0 opacity-5 bg-gradient-to-b from-white to-transparent pointer-events-none")} />
+                            </>
                           )}
-                        </div>
-                      </div>
-                      <PricingBadge tier={tool.pricing} />
-                    </div>
-                  ))}
-                </div>
-
-                {/* Row helper */}
-                {(
-                  [
-                    {
-                      label: "Category",
-                      render: (tool: ToolInfo) => (
-                        <span className={cn("font-label text-[11px] uppercase tracking-widest px-3 py-1.5 rounded-full border", CATEGORY_ACCENT[tool.categorySlug] ?? "bg-white/[0.04] text-white/40 border-white/[0.06]")}>
-                          {tool.category}
-                        </span>
-                      ),
-                    },
-                    {
-                      label: "Pricing",
-                      render: (tool: ToolInfo) => (
-                        <div>
-                          <div className="font-headline text-xl font-bold text-white capitalize">{tool.pricing}</div>
-                          <div className="font-label text-xs text-white/60 uppercase tracking-widest mt-0.5">
-                            {tool.pricing === "free" ? "No cost" : tool.pricing === "freemium" ? "Free tier available" : "Subscription required"}
+                          <div className="flex items-center gap-3 mb-3 relative">
+                            <div
+                              className={cn(
+                                "w-10 h-10 border flex items-center justify-center rounded-xl shrink-0 shadow-lg",
+                                CATEGORY_ACCENT[tool.categorySlug] ?? "bg-white/[0.04] text-white/40 border-white/[0.06]",
+                                CATEGORY_GLOW[tool.categorySlug]
+                              )}
+                            >
+                              <span className="font-mono text-sm font-bold">{tool.code}</span>
+                            </div>
+                            <div>
+                              <h3 className="red-text-pulse font-headline text-base font-bold leading-tight">{tool.name}</h3>
+                              {i === winnerIndex && (
+                                <span className="font-label text-[9px] uppercase tracking-widest text-white/50 flex items-center gap-1">
+                                  <Trophy size={9} weight="fill" className="text-amber-400/70" />
+                                  Best match
+                                </span>
+                              )}
+                            </div>
                           </div>
+                          <PricingBadge tier={tool.pricing} />
                         </div>
-                      ),
-                    },
-                    {
-                      label: "Best For",
-                      render: (tool: ToolInfo) => (
-                        <p className="text-base text-white/85 leading-relaxed">{tool.bestFor}</p>
-                      ),
-                    },
-                  ] as { label: string; render: (tool: ToolInfo) => React.ReactNode }[]
-                ).map(({ label, render }, rowIdx) => (
-                  <div
-                    key={label}
-                    className="grid border-b border-white/[0.06]"
-                    style={{ gridTemplateColumns: `200px repeat(${selectedTools.length}, 1fr)` }}
-                  >
-                    <div className="p-6 bg-[#060606] flex items-center">
-                      <span className="font-label text-sm font-semibold uppercase tracking-widest text-white/70">{label}</span>
+                      ))}
                     </div>
-                    {selectedTools.map((tool, i) => (
+
+                    {/* Row helper */}
+                    {(
+                      [
+                        {
+                          label: "Category",
+                          render: (tool: ToolInfo) => (
+                            <span className={cn("font-label text-[11px] uppercase tracking-widest px-3 py-1.5 rounded-full border", CATEGORY_ACCENT[tool.categorySlug] ?? "bg-white/[0.04] text-white/40 border-white/[0.06]")}>
+                              {tool.category}
+                            </span>
+                          ),
+                        },
+                        {
+                          label: "Pricing",
+                          render: (tool: ToolInfo) => (
+                            <div>
+                              <div className="font-headline text-xl font-bold text-white capitalize">{tool.pricing}</div>
+                              <div className="font-label text-xs text-white/60 uppercase tracking-widest mt-0.5">
+                                {tool.pricing === "free" ? "No cost" : tool.pricing === "freemium" ? "Free tier available" : "Subscription required"}
+                              </div>
+                            </div>
+                          ),
+                        },
+                        {
+                          label: "Best For",
+                          render: (tool: ToolInfo) => (
+                            <p className="text-sm text-white/85 leading-relaxed line-clamp-3">{tool.bestFor.split(",").slice(0, 3).join(", ")}</p>
+                          ),
+                        },
+                      ] as { label: string; render: (tool: ToolInfo) => React.ReactNode }[]
+                    ).map(({ label, render }) => (
                       <div
-                        key={tool.name}
-                        className={cn(
-                          "p-6 border-l border-white/[0.06] flex items-center",
-                          i === winnerIndex ? "bg-white/[0.025]" : ""
-                        )}
+                        key={label}
+                        className="grid border-b border-white/[0.06]"
+                        style={{ gridTemplateColumns: `180px repeat(${selectedTools.length}, 1fr)` }}
                       >
-                        {render(tool)}
+                        <div className="p-5 bg-[#060606] flex items-center">
+                          <span className="font-label text-sm font-semibold uppercase tracking-widest text-white/70">{label}</span>
+                        </div>
+                        {selectedTools.map((tool, i) => (
+                          <div
+                            key={tool.name}
+                            className={cn(
+                              "p-5 border-l border-white/[0.06] flex items-center",
+                              i === winnerIndex ? "bg-white/[0.025]" : ""
+                            )}
+                          >
+                            {render(tool)}
+                          </div>
+                        ))}
                       </div>
                     ))}
-                  </div>
-                ))}
 
-                {/* Task Match row */}
-                <div
-                  className="grid"
-                  style={{ gridTemplateColumns: `200px repeat(${selectedTools.length}, 1fr)` }}
-                >
-                  <div className="p-6 bg-[#060606] flex items-center">
-                    <div>
-                      <span className="font-label text-xs font-semibold uppercase tracking-widest text-white/40 block">Task Match</span>
-                      <span className="font-label text-[9px] text-white/20 uppercase tracking-widest">For your task</span>
+                    {/* Task Match row */}
+                    <div
+                      className="grid"
+                      style={{ gridTemplateColumns: `180px repeat(${selectedTools.length}, 1fr)` }}
+                    >
+                      <div className="p-5 bg-[#060606] flex items-center">
+                        <div>
+                          <span className="font-label text-xs font-semibold uppercase tracking-widest text-white/40 block">Task Match</span>
+                          <span className="font-label text-[9px] text-white/20 uppercase tracking-widest">For your task</span>
+                        </div>
+                      </div>
+                      {selectedTools.map((tool, i) => (
+                        <div
+                          key={tool.name}
+                          className={cn("p-5 border-l border-white/[0.06]", i === winnerIndex ? "bg-white/[0.025]" : "")}
+                        >
+                          <ScoreBar score={scores[i]} animate={animateBars} isWinner={i === winnerIndex} />
+                        </div>
+                      ))}
                     </div>
                   </div>
-                  {selectedTools.map((tool, i) => (
-                    <div
-                      key={tool.name}
-                      className={cn("p-6 border-l border-white/[0.06]", i === winnerIndex ? "bg-white/[0.025]" : "")}
-                    >
-                      <ScoreBar score={scores[i]} animate={animateBars} isWinner={i === winnerIndex} />
-                    </div>
-                  ))}
                 </div>
               </div>
 
@@ -679,8 +728,20 @@ export default function ComparePage(): React.JSX.Element {
                 </div>
               </div>
 
-              {/* Reset */}
-              <div className="mt-14 flex justify-center">
+              {/* Reset + Share */}
+              <div className="mt-14 flex flex-col sm:flex-row justify-center items-center gap-6">
+                <button
+                  onClick={handleShare}
+                  className="font-label text-xs uppercase tracking-widest text-white/25 hover:text-white/60 transition-colors flex items-center gap-2 group"
+                >
+                  <span className={cn("transition-transform", copied ? "scale-110" : "group-hover:scale-110")}>
+                    {copied ? "✓" : "⎘"}
+                  </span>
+                  {copied ? "Link copied!" : "Share comparison"}
+                </button>
+
+                <span className="hidden sm:block w-px h-4 bg-white/[0.08]" />
+
                 <button
                   onClick={() => {
                     setHasCompared(false);
@@ -702,5 +763,13 @@ export default function ComparePage(): React.JSX.Element {
 
       <Footer />
     </div>
+  );
+}
+
+export default function ComparePageWrapper(): React.JSX.Element {
+  return (
+    <Suspense>
+      <ComparePage />
+    </Suspense>
   );
 }

@@ -360,10 +360,10 @@ export function ToolDetailClient({ tool }: { tool: ResolvedTool }): React.JSX.El
             </motion.a>
             <motion.div whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }}>
               <Link
-                href="/compare"
+                href={`/compare?tools=${encodeURIComponent(tool.name)}`}
                 className="inline-flex items-center gap-2 border border-white/[0.12] text-white/70 px-7 py-3.5 rounded-sm font-label uppercase tracking-widest text-xs hover:border-white/30 hover:text-white transition-all"
               >
-                Compare
+                Compare with another tool
               </Link>
             </motion.div>
           </motion.div>
