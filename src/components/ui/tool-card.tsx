@@ -111,7 +111,7 @@ function ToolCardFront({
             color: "rgba(255,255,255,0.70)",
           }}
         >
-          {Math.round(matchScore * 100)}% match
+          {Math.round(matchScore)}% match
         </div>
       )}
 

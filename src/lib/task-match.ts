@@ -82,5 +82,7 @@ export function scoreToolForTask(tool: ToolMatchInput, task: string): number {
   const catNameScore = taskLower.includes(tool.categoryName.toLowerCase()) ? 5 : 0;
 
   const total = catScore + bestForScore + nameScore + catNameScore;
-  return Math.min(97, Math.max(12, total));
+  return Math.min(100, total);
 }
+
+export const MINIMUM_MATCH_SCORE = 10;

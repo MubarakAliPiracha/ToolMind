@@ -32,7 +32,7 @@ export function HeroSection(): React.JSX.Element {
 
   function submitSearch(): void {
     const q = searchValue.trim();
-    if (q) router.push(`/search?q=${encodeURIComponent(q)}`);
+    if (q) router.push(`/tools?q=${encodeURIComponent(q)}`);
     else router.push("/tools");
   }
 
@@ -183,7 +183,7 @@ export function HeroSection(): React.JSX.Element {
             {TASK_PILLS.map(({ Icon, label, query }) => (
               <Link
                 key={label}
-                href={`/search?q=${encodeURIComponent(query)}`}
+                href={`/tools?q=${encodeURIComponent(query)}`}
                 className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/30 font-label text-[11px] uppercase tracking-widest text-white/70 bg-white/[0.04] backdrop-blur-sm transition-all duration-300 hover:border-white/70 hover:text-white hover:bg-white/[0.10] hover:shadow-[0_0_18px_rgba(255,255,255,0.18)]"
                 style={{ boxShadow: "0 0 10px rgba(255,255,255,0.07), inset 0 0 8px rgba(255,255,255,0.03)" }}
               >

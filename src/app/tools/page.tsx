@@ -2,12 +2,14 @@
 
 import { useState, useRef, useMemo } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Footer } from "@/components/ui/footer";
 import { FadeUpContainer, FadeUpItem } from "@/components/ui/motion";
 import { ToolCard, type Pricing } from "@/components/ui/tool-card";
 import { categories, type CategoryKey } from "@/lib/data/categories";
 import { makeToolPageSlug } from "@/lib/tool-slug";
+import { scoreToolForTask, MINIMUM_MATCH_SCORE } from "@/lib/task-match";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut";
 import { cn } from "@/lib/utils";
@@ -29,7 +31,7 @@ interface FlatTool {
   name: string;
   description: string;
   category: string;
-  categorySlug: string;
+  categorySlug: CategoryKey;
   pricing: Pricing;
   slug: string;
   logoUrl?: string;
@@ -67,7 +69,9 @@ const SIDEBAR_CATEGORIES: SidebarCategory[] = [
 ];
 
 export default function ToolsDirectoryPage(): React.JSX.Element {
-  const [rawQuery, setRawQuery] = useState("");
+  const searchParams = useSearchParams();
+  const urlQuery = searchParams.get("q") ?? "";
+  const [rawQuery, setRawQuery] = useState(urlQuery);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -77,19 +81,24 @@ export default function ToolsDirectoryPage(): React.JSX.Element {
   useKeyboardShortcut("/", () => searchInputRef.current?.focus());
 
   const filtered = useMemo(() => {
-    return ALL_TOOLS.filter((tool) => {
-      const matchesCategory =
-        activeCategory === "all" || tool.categorySlug === activeCategory;
-      if (!matchesCategory) return false;
+    const categoryFiltered = ALL_TOOLS.filter(
+      (tool) => activeCategory === "all" || tool.categorySlug === activeCategory
+    );
 
-      if (query === "") return true;
-      const q = query.toLowerCase();
-      return (
-        tool.name.toLowerCase().includes(q) ||
-        tool.description.toLowerCase().includes(q) ||
-        tool.category.toLowerCase().includes(q)
-      );
-    });
+    if (query === "") return categoryFiltered.map((tool) => ({ tool, score: undefined }));
+
+    const scored = categoryFiltered
+      .map((tool) => ({
+        tool,
+        score: scoreToolForTask(
+          { categorySlug: tool.categorySlug, categoryName: tool.category, name: tool.name, bestFor: tool.description },
+          query
+        ),
+      }))
+      .filter(({ score }) => score >= MINIMUM_MATCH_SCORE);
+
+    scored.sort((a, b) => b.score - a.score);
+    return scored;
   }, [query, activeCategory]);
 
   return (
@@ -284,7 +293,7 @@ export default function ToolsDirectoryPage(): React.JSX.Element {
                 {/* Cards grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   <AnimatePresence mode="popLayout">
-                    {filtered.map((tool, i) => (
+                    {filtered.map(({ tool, score }, i) => (
                       <motion.div
                         key={tool.slug}
                         layout
@@ -305,6 +314,7 @@ export default function ToolsDirectoryPage(): React.JSX.Element {
                           pricing={tool.pricing}
                           slug={tool.slug}
                           logoUrl={tool.logoUrl}
+                          matchScore={score}
                         />
                       </motion.div>
                     ))}
