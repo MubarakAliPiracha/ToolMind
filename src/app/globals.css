@@ -1,26 +1,251 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #050505;
+  --foreground: #f0f0f0;
+  --border: rgba(255, 255, 255, 0.08);
+  --muted: #6b6b6b;
+  --accent: #ffffff;
+  --card: #111111;
+
+  /* Monochrome accent */
+  --lime: #ffffff;
+  --lime-dim: #a0a0a0;
+
+  /* Dark surfaces */
+  --surface-base: #050505;
+  --surface-dark: #0a0a0a;
+  --surface-card: #111111;
+  --surface-hover: #1a1a1a;
+  --surface-raised: #161616;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-card: var(--card);
+  --color-lime: var(--lime);
+
+  /* Dark surface tokens */
+  --color-surface-base: var(--surface-base);
+  --color-surface-dark: var(--surface-dark);
+  --color-surface-card: var(--surface-card);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-raised: var(--surface-raised);
+
+  /* Obsidian Prism design system tokens */
+  --color-primary: #ffffff;
+  --color-secondary: #c6c6c7;
+  --color-surface: #0e131f;
+  --color-surface-container: #1a202c;
+  --color-surface-container-low: #161c28;
+  --color-surface-container-high: #242a36;
+  --color-surface-dim: #0e131f;
+  --color-outline: #919191;
+  --color-outline-variant: #474747;
+  --color-on-surface: #dde2f3;
+  --color-on-surface-variant: #c6c6c6;
+
+  /* Font families */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-headline: var(--font-epilogue);
+  --font-body: var(--font-geist-sans);
+  --font-label: var(--font-space-grotesk);
+
+  --animation-spotlight: spotlight 2s ease 0.75s 1 forwards;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ── Marquee animations ── */
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes marquee-left {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes marquee-right {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes spotlight {
+  0% {
+    opacity: 0;
+    transform: translate(-72%, -62%) scale(0.5);
   }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -40%) scale(1);
+  }
+}
+
+@keyframes pulse-lime {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+@keyframes red-border-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(239, 68, 68, 0.18),
+      0 0 16px rgba(239, 68, 68, 0.06);
+    border-color: rgba(239, 68, 68, 0.20);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(239, 68, 68, 0.50),
+      0 0 40px rgba(239, 68, 68, 0.18),
+      0 0 80px rgba(239, 68, 68, 0.07);
+    border-color: rgba(239, 68, 68, 0.45);
+  }
+}
+
+@keyframes red-text-pulse {
+  0%, 100% {
+    text-shadow:
+      0 0 10px rgba(239, 68, 68, 0.25),
+      0 0 20px rgba(239, 68, 68, 0.10);
+  }
+  50% {
+    text-shadow:
+      0 0 14px rgba(239, 68, 68, 0.75),
+      0 0 30px rgba(239, 68, 68, 0.45),
+      0 0 60px rgba(239, 68, 68, 0.20);
+  }
+}
+
+.red-border-pulse {
+  animation: red-border-pulse 2.8s ease-in-out infinite;
+}
+
+.red-text-pulse {
+  animation: red-text-pulse 2.8s ease-in-out infinite;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* Static red glow — for labels, descriptions, sidebar items */
+.red-glow-text {
+  color: rgba(252, 165, 165, 0.80);
+  text-shadow:
+    0 0 8px rgba(239, 68, 68, 0.55),
+    0 0 18px rgba(239, 68, 68, 0.25);
+}
+
+@keyframes card-shimmer {
+  0% { transform: translateX(-150%) skewX(-15deg); }
+  100% { transform: translateX(350%) skewX(-15deg); }
+}
+
+.card-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0.11),
+    rgba(255, 255, 255, 0.06),
+    transparent
+  );
+  animation: card-shimmer 3.5s ease-in-out infinite;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+.spotlight {
+  background: radial-gradient(600px circle at var(--x) var(--y), rgba(255, 255, 255, 0.4), transparent 80%);
+}
+
+/* ──────────────────────────────────────────────────
+   Editorial grid — 4-column comparison layout
+   ────────────────────────────────────────────────── */
+
+.editorial-grid {
+  display: grid;
+  grid-template-columns: 240px 1fr 1fr 1fr;
+}
+
+@media (max-width: 768px) {
+  .editorial-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ──────────────────────────────────────────────────
+   Marquee scroll bar
+   ────────────────────────────────────────────────── */
+
+.marquee-track {
+  display: flex;
+  animation: marquee-scroll 25s linear infinite;
+  width: max-content;
+}
+
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+/* ──────────────────────────────────────────────────
+   Neon lime glow effects
+   ────────────────────────────────────────────────── */
+
+.glow-lime {
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.12), 0 0 60px rgba(255, 255, 255, 0.04);
+}
+
+.glow-lime-strong {
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.15), 0 0 80px rgba(255, 255, 255, 0.05);
+}
+
+.text-glow-lime {
+  text-shadow: 0 0 40px rgba(255, 255, 255, 0.3), 0 0 80px rgba(255, 255, 255, 0.1);
+}
+
+/* ──────────────────────────────────────────────────
+   Background watermark
+   ────────────────────────────────────────────────── */
+
+.watermark {
+  font-size: clamp(8rem, 20vw, 20rem);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  opacity: 0.03;
+  user-select: none;
+  pointer-events: none;
+}
+
+@media (max-width: 1024px) {
+  .editorial-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .editorial-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ──────────────────────────────────────────────────
+   Monospace category code badges
+   ────────────────────────────────────────────────── */
+
+.icon-mono {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  min-width: 20px;
+  text-align: center;
+  display: inline-block;
 }

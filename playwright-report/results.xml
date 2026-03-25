@@ -1,0 +1,88 @@
+<testsuites id="" name="" tests="42" failures="0" skipped="0" errors="0" time="32.990324">
+<testsuite name="home.spec.ts" timestamp="2026-03-23T06:29:59.283Z" hostname="chromium" tests="42" failures="0" skipped="0" time="167.169" errors="0">
+<testcase name="Homepage — render › page title is ToolMind" classname="home.spec.ts" time="4.445">
+</testcase>
+<testcase name="Homepage — render › hero headline is visible" classname="home.spec.ts" time="5.075">
+</testcase>
+<testcase name="Homepage — render › hero subtext is visible" classname="home.spec.ts" time="4.656">
+</testcase>
+<testcase name="Homepage — render › hero right column container is present (Spline 3D wrapper)" classname="home.spec.ts" time="5.58">
+</testcase>
+<testcase name="Homepage — navigation bar › nav logo text reads ToolMind" classname="home.spec.ts" time="4.375">
+</testcase>
+<testcase name="Homepage — navigation bar › Directory nav link has href /directory" classname="home.spec.ts" time="5.111">
+</testcase>
+<testcase name="Homepage — navigation bar › Categories nav link has href /categories" classname="home.spec.ts" time="3.693">
+</testcase>
+<testcase name="Homepage — navigation bar › Compare nav link has href /compare" classname="home.spec.ts" time="3.577">
+</testcase>
+<testcase name="Homepage — navigation bar › Log in button is visible and links to /login" classname="home.spec.ts" time="3.448">
+</testcase>
+<testcase name="Homepage — navigation bar › Get started button is visible and links to /signup" classname="home.spec.ts" time="2.789">
+</testcase>
+<testcase name="Homepage — search bar interaction › search input is visible with correct placeholder" classname="home.spec.ts" time="2.856">
+</testcase>
+<testcase name="Homepage — search bar interaction › user can type in the search input" classname="home.spec.ts" time="3.202">
+</testcase>
+<testcase name="Homepage — search bar interaction › search input accepts focus without error" classname="home.spec.ts" time="4.585">
+</testcase>
+<testcase name="Homepage — search bar interaction › search input loses focus on blur" classname="home.spec.ts" time="3.453">
+</testcase>
+<testcase name="Homepage — Featured Tools section › section headline is visible" classname="home.spec.ts" time="4.394">
+</testcase>
+<testcase name="Homepage — Featured Tools section › exactly 6 tool cards are rendered" classname="home.spec.ts" time="3.476">
+</testcase>
+<testcase name="Homepage — Featured Tools section › tool card for &quot;ChatGPT&quot; shows name, category, and pricing" classname="home.spec.ts" time="4.172">
+</testcase>
+<testcase name="Homepage — Featured Tools section › tool card for &quot;Midjourney&quot; shows name, category, and pricing" classname="home.spec.ts" time="4.32">
+</testcase>
+<testcase name="Homepage — Featured Tools section › tool card for &quot;Cursor&quot; shows name, category, and pricing" classname="home.spec.ts" time="3.999">
+</testcase>
+<testcase name="Homepage — Featured Tools section › tool card for &quot;Perplexity&quot; shows name, category, and pricing" classname="home.spec.ts" time="3.533">
+</testcase>
+<testcase name="Homepage — Featured Tools section › tool card for &quot;Notion AI&quot; shows name, category, and pricing" classname="home.spec.ts" time="2.726">
+</testcase>
+<testcase name="Homepage — Featured Tools section › tool card for &quot;ElevenLabs&quot; shows name, category, and pricing" classname="home.spec.ts" time="3.091">
+</testcase>
+<testcase name="Homepage — Featured Tools section › Browse all tools CTA links to /directory" classname="home.spec.ts" time="3.024">
+</testcase>
+<testcase name="Homepage — Category section › section headline is visible" classname="home.spec.ts" time="2.074">
+</testcase>
+<testcase name="Homepage — Category section › exactly 10 category cards are rendered" classname="home.spec.ts" time="3.486">
+</testcase>
+<testcase name="Homepage — Category section › category card &quot;Writing&quot; links to /categories/writing" classname="home.spec.ts" time="3.756">
+</testcase>
+<testcase name="Homepage — Category section › category card &quot;Coding&quot; links to /categories/coding" classname="home.spec.ts" time="3.694">
+</testcase>
+<testcase name="Homepage — Category section › category card &quot;Image&quot; links to /categories/image" classname="home.spec.ts" time="3.015">
+</testcase>
+<testcase name="Homepage — Category section › category card &quot;Video&quot; links to /categories/video" classname="home.spec.ts" time="3.223">
+</testcase>
+<testcase name="Homepage — Category section › category card &quot;Audio&quot; links to /categories/audio" classname="home.spec.ts" time="2.745">
+</testcase>
+<testcase name="Homepage — Category section › category card &quot;Research&quot; links to /categories/research" classname="home.spec.ts" time="3.615">
+</testcase>
+<testcase name="Homepage — Category section › category card &quot;Productivity&quot; links to /categories/productivity" classname="home.spec.ts" time="3.366">
+</testcase>
+<testcase name="Homepage — Category section › category card &quot;Data&quot; links to /categories/data" classname="home.spec.ts" time="3.158">
+</testcase>
+<testcase name="Homepage — Category section › category card &quot;Marketing&quot; links to /categories/marketing" classname="home.spec.ts" time="2.72">
+</testcase>
+<testcase name="Homepage — Category section › category card &quot;Support&quot; links to /categories/support" classname="home.spec.ts" time="2.669">
+</testcase>
+<testcase name="Homepage — Footer › footer is visible" classname="home.spec.ts" time="3.8">
+</testcase>
+<testcase name="Homepage — Footer › footer logo links to homepage" classname="home.spec.ts" time="6.819">
+</testcase>
+<testcase name="Homepage — Footer › copyright text is present" classname="home.spec.ts" time="6.769">
+</testcase>
+<testcase name="Homepage — Footer › footer nav has 3 links: Directory, Categories, Compare" classname="home.spec.ts" time="6.444">
+</testcase>
+<testcase name="Homepage — Footer › footer Directory link has correct href" classname="home.spec.ts" time="5.763">
+</testcase>
+<testcase name="Homepage — Footer › footer Categories link has correct href" classname="home.spec.ts" time="4.553">
+</testcase>
+<testcase name="Homepage — Footer › footer Compare link has correct href" classname="home.spec.ts" time="5.92">
+</testcase>
+</testsuite>
+</testsuites>
