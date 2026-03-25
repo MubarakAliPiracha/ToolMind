@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -68,7 +68,7 @@ const SIDEBAR_CATEGORIES: SidebarCategory[] = [
   })),
 ];
 
-export default function ToolsDirectoryPage(): React.JSX.Element {
+function ToolsDirectoryPage(): React.JSX.Element {
   const searchParams = useSearchParams();
   const urlQuery = searchParams.get("q") ?? "";
   const [rawQuery, setRawQuery] = useState(urlQuery);
@@ -346,5 +346,13 @@ export default function ToolsDirectoryPage(): React.JSX.Element {
 
       <Footer />
     </div>
+  );
+}
+
+export default function ToolsPage(): React.JSX.Element {
+  return (
+    <Suspense>
+      <ToolsDirectoryPage />
+    </Suspense>
   );
 }
