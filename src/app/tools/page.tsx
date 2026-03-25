@@ -69,6 +69,7 @@ const SIDEBAR_CATEGORIES: SidebarCategory[] = [
 export default function ToolsDirectoryPage(): React.JSX.Element {
   const [rawQuery, setRawQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const query = useDebounce(rawQuery, 180);
 
@@ -96,14 +97,31 @@ export default function ToolsDirectoryPage(): React.JSX.Element {
       <div className="flex min-h-screen pt-24">
 
         {/* ── Sidebar ── */}
-        <aside className="hidden lg:flex flex-col h-screen w-64 border-r border-white/[0.04] bg-black/40 backdrop-blur-md sticky top-0 py-8 px-4 overflow-y-auto">
-          <div className="mb-8 px-4">
-            <h3 className="red-text-pulse font-headline text-2xl font-bold tracking-tight">
-              Categories
-            </h3>
-            <p className="red-glow-text font-label text-xs uppercase tracking-widest mt-1">
-              Filter by domain
-            </p>
+        <aside className={cn(
+          "hidden lg:flex flex-col h-screen border-r border-white/[0.04] bg-black/40 backdrop-blur-md sticky top-0 py-8 overflow-y-auto transition-all duration-300",
+          sidebarOpen ? "w-64 px-4" : "w-14 px-2"
+        )}>
+          <div className={cn("mb-8 flex items-center", sidebarOpen ? "px-4 justify-between" : "justify-center")}>
+            {sidebarOpen && (
+              <div>
+                <h3 className="red-text-pulse font-headline text-2xl font-bold tracking-tight">
+                  Categories
+                </h3>
+                <p className="red-glow-text font-label text-xs uppercase tracking-widest mt-1">
+                  Filter by domain
+                </p>
+              </div>
+            )}
+            <button
+              onClick={() => setSidebarOpen((v) => !v)}
+              className="shrink-0 w-7 h-7 flex items-center justify-center rounded-md hover:bg-white/[0.06] transition-colors"
+              style={{ color: "rgba(252,165,165,0.7)" }}
+              title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+            >
+              <svg className={cn("w-4 h-4 transition-transform duration-300", sidebarOpen ? "" : "rotate-180")} fill="none" strokeWidth={1.8} stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+            </button>
           </div>
 
           <nav className="flex flex-col space-y-0.5 mb-auto">
@@ -113,8 +131,10 @@ export default function ToolsDirectoryPage(): React.JSX.Element {
                 <button
                   key={slug}
                   onClick={() => setActiveCategory(slug)}
+                  title={!sidebarOpen ? label : undefined}
                   className={cn(
-                    "flex items-center justify-between px-4 py-3 font-label text-sm font-medium transition-colors duration-100 text-left rounded-sm w-full",
+                    "flex items-center font-label text-sm font-medium transition-colors duration-100 text-left rounded-sm w-full",
+                    sidebarOpen ? "justify-between px-4 py-3" : "justify-center px-0 py-2.5",
                     isActive
                       ? "bg-white/[0.08] border-l-2 border-red-500/70"
                       : "hover:bg-white/[0.04]"
@@ -124,9 +144,9 @@ export default function ToolsDirectoryPage(): React.JSX.Element {
                     : { color: "rgba(252,165,165,0.65)", textShadow: "0 0 8px rgba(239,68,68,0.35)" }
                   }
                 >
-                  <span className="flex items-center gap-3">
+                  <span className={cn("flex items-center", sidebarOpen ? "gap-3" : "")}>
                     <span className={cn(
-                      "w-7 h-7 rounded-lg flex items-center justify-center font-mono text-[10px] font-bold border transition-colors",
+                      "w-7 h-7 rounded-lg flex items-center justify-center font-mono text-[10px] font-bold border transition-colors shrink-0",
                       isActive
                         ? "bg-red-500/10 border-red-500/30"
                         : "bg-white/[0.04] border-white/[0.06]"
@@ -137,26 +157,31 @@ export default function ToolsDirectoryPage(): React.JSX.Element {
                     }>
                       {code}
                     </span>
-                    {label}
+                    {sidebarOpen && label}
                   </span>
-                  <span
-                    className={cn("font-mono text-[10px] px-2 py-0.5 rounded-md border", isActive ? "bg-red-500/10 border-red-500/20" : "border-transparent")}
-                    style={isActive
-                      ? { color: "rgba(252,165,165,0.9)", textShadow: "0 0 6px rgba(239,68,68,0.5)" }
-                      : { color: "rgba(252,165,165,0.50)" }
-                    }>
-                    {count}
-                  </span>
+                  {sidebarOpen && (
+                    <span
+                      className={cn("font-mono text-[10px] px-2 py-0.5 rounded-md border", isActive ? "bg-red-500/10 border-red-500/20" : "border-transparent")}
+                      style={isActive
+                        ? { color: "rgba(252,165,165,0.9)", textShadow: "0 0 6px rgba(239,68,68,0.5)" }
+                        : { color: "rgba(252,165,165,0.50)" }
+                      }
+                    >
+                      {count}
+                    </span>
+                  )}
                 </button>
               );
             })}
           </nav>
 
-          <div className="px-4 pt-6 border-t border-white/[0.04]">
-            <div className="red-glow-text font-mono text-[10px] uppercase tracking-widest">
-              {ALL_TOOLS.length} tools indexed
+          {sidebarOpen && (
+            <div className="px-4 pt-6 border-t border-white/[0.04]">
+              <div className="red-glow-text font-mono text-[10px] uppercase tracking-widest">
+                {ALL_TOOLS.length} tools indexed
+              </div>
             </div>
-          </div>
+          )}
         </aside>
 
         {/* ── Main ── */}
