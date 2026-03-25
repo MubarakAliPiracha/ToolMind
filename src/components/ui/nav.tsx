@@ -8,7 +8,6 @@ import { HoverBorderGradient } from "./hover-border-gradient";
 
 const NAV_LINKS = [
   { href: "/tools", label: "DIRECTORY" },
-  { href: "/search", label: "SEARCH" },
   { href: "/compare", label: "COMPARE" },
 ] as const;
 
@@ -55,7 +54,7 @@ export function Nav(): React.JSX.Element {
         {/* CTA */}
         <HoverBorderGradient
           as={Link}
-          href="/search"
+          href="/tools"
           containerClassName="rounded-full shrink-0"
           className="font-label text-[11px] uppercase tracking-[0.12em] text-white/80 px-3 py-1 bg-[#050505]"
           duration={1.5}

@@ -21,7 +21,7 @@ const FOOTER_EXPLORE = [
 ] as const;
 
 const FOOTER_META = [
-  { label: "Search Tools", href: "/search" },
+  { label: "Search Tools", href: "/tools" },
   { label: "Compare Tools", href: "/compare" },
 ] as const;
 
