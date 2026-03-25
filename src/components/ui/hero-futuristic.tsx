@@ -143,10 +143,10 @@ export function HeroFuturistic(): React.JSX.Element {
       {/* Scan line */}
       <ScanLine />
 
-      {/* Spline 3D robot — large, face visible in upper-center */}
-      <div className="absolute inset-0 z-[3] flex items-center justify-center pointer-events-none overflow-visible">
+      {/* Spline 3D robot — positioned in lower half so text sits above */}
+      <div className="absolute inset-0 z-[3] flex items-end justify-center pointer-events-none overflow-visible">
         <div
-          className="pointer-events-auto shrink-0 translate-y-[12%]"
+          className="pointer-events-auto shrink-0 translate-y-[18%]"
           style={{
             width: "min(130vmin, 1100px)",
             height: "min(130vmin, 1100px)",
@@ -167,8 +167,8 @@ export function HeroFuturistic(): React.JSX.Element {
         }}
       />
 
-      {/* Text */}
-      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none px-6">
+      {/* Text — sits at top so robot is visible below */}
+      <div className="absolute inset-0 z-20 flex flex-col items-center justify-start pt-20 pointer-events-none px-6">
         <div className="flex gap-3 md:gap-5 overflow-hidden">
           {titleWords.map((word, i) => (
             <motion.span
