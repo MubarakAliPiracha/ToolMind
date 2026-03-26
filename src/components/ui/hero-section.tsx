@@ -152,7 +152,7 @@ export function HeroSection(): React.JSX.Element {
           className="w-full max-w-xl space-y-6"
         >
           {/* Search input */}
-          <div className="relative flex items-center h-14 w-full bg-white/[0.03] border border-white/[0.06] rounded-full px-5 transition-all duration-300 focus-within:border-white/30 focus-within:bg-white/[0.05] backdrop-blur-sm">
+          <div className="relative flex items-center h-14 w-full bg-white/[0.03] border border-white/[0.06] rounded-full px-5 pr-2 transition-all duration-300 focus-within:border-white/30 focus-within:bg-white/[0.05] backdrop-blur-sm">
             <svg
               className="w-4 h-4 text-white/40 mr-3 shrink-0"
               fill="none"
@@ -167,19 +167,29 @@ export function HeroSection(): React.JSX.Element {
               />
             </svg>
             <input
-              type="text"
+              type="search"
+              enterKeyHint="search"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") submitSearch();
               }}
               placeholder="Describe what you want to do…"
-              className="w-full bg-transparent border-none outline-none text-white/80 placeholder:text-white/35 font-body text-base"
+              className="flex-1 min-w-0 bg-transparent border-none outline-none text-white/80 placeholder:text-white/35 font-body text-base"
             />
+            <button
+              onClick={submitSearch}
+              aria-label="Search"
+              className="shrink-0 ml-2 w-9 h-9 rounded-full bg-white text-[#050505] flex items-center justify-center hover:bg-white/80 active:scale-95 transition-all"
+            >
+              <svg className="w-4 h-4" fill="none" strokeWidth={2} stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+              </svg>
+            </button>
           </div>
 
           {/* Task pills */}
-          <div className="flex flex-wrap justify-start gap-2">
+          <div className="flex flex-wrap justify-start gap-2 max-w-full">
             {TASK_PILLS.map(({ Icon, label, query }) => (
               <Link
                 key={label}

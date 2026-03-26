@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useMemo, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useRef, useMemo, useEffect, Suspense } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Footer } from "@/components/ui/footer";
@@ -10,10 +10,8 @@ import { ToolCard, type Pricing } from "@/components/ui/tool-card";
 import { categories, type CategoryKey } from "@/lib/data/categories";
 import { makeToolPageSlug } from "@/lib/tool-slug";
 import {
-  scoreToolForTask,
-  lexicalMatchScore,
+  combinedDirectoryRelevanceScore,
   MINIMUM_MATCH_SCORE,
-  MINIMUM_LEXICAL_SCORE,
 } from "@/lib/task-match";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut";
@@ -74,13 +72,78 @@ const SIDEBAR_CATEGORIES: SidebarCategory[] = [
 ];
 
 function ToolsDirectoryPage(): React.JSX.Element {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const urlQuery = searchParams.get("q") ?? "";
-  const [rawQuery, setRawQuery] = useState(urlQuery);
+  const qFromUrl = searchParams.get("q") ?? "";
+
+  const [rawQuery, setRawQuery] = useState(qFromUrl);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [apiRanking, setApiRanking] = useState<Map<string, number>>(new Map());
+  const [isSearching, setIsSearching] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const apiQueryRef = useRef<string>("");
   const query = useDebounce(rawQuery, 180);
+  const debouncedForUrl = useDebounce(rawQuery, 400);
+  const skipNextUrlToStateSync = useRef(false);
+
+  // Keep input in sync when `q` changes (back/forward, shared links). Skip once after we
+  // `replace` the URL ourselves so a slower debounce cannot clobber in-progress typing.
+  useEffect(() => {
+    if (skipNextUrlToStateSync.current) {
+      skipNextUrlToStateSync.current = false;
+      return;
+    }
+    setRawQuery(qFromUrl);
+  }, [qFromUrl]);
+
+  // Reflect search in the URL so shared links and reloads match what you typed.
+  useEffect(() => {
+    const next = debouncedForUrl.trim();
+    const cur = qFromUrl.trim();
+    if (next === cur) return;
+    skipNextUrlToStateSync.current = true;
+    const params = new URLSearchParams(searchParams.toString());
+    if (next) params.set("q", next);
+    else params.delete("q");
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [debouncedForUrl, pathname, qFromUrl, router, searchParams]);
+
+  // AI-powered semantic search — fires after the URL debounce settles
+  useEffect(() => {
+    const q = debouncedForUrl.trim();
+    if (!q) {
+      setApiRanking(new Map());
+      setIsSearching(false);
+      return;
+    }
+    apiQueryRef.current = q;
+    setIsSearching(true);
+    fetch("/api/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: q }),
+    })
+      .then((r) => r.json())
+      .then((data: { results?: Array<{ name: string; score: number }> }) => {
+        if (apiQueryRef.current !== q) return; // stale response, discard
+        if (Array.isArray(data.results)) {
+          const ranking = new Map<string, number>();
+          for (const { name, score } of data.results) {
+            ranking.set(name, score);
+          }
+          setApiRanking(ranking);
+        }
+      })
+      .catch(() => {
+        // API unavailable — client-side scoring stays as fallback silently
+      })
+      .finally(() => {
+        if (apiQueryRef.current === q) setIsSearching(false);
+      });
+  }, [debouncedForUrl]);
 
   // Press "/" to focus the search input
   useKeyboardShortcut("/", () => searchInputRef.current?.focus());
@@ -93,62 +156,66 @@ function ToolsDirectoryPage(): React.JSX.Element {
     if (query === "") {
       return {
         directoryRows: categoryFiltered.map((tool) => ({ tool, score: undefined as number | undefined })),
-        searchHint: undefined as undefined | "lexical" | "all",
+        searchHint: undefined as undefined | "weak" | "none" | "widened",
       };
     }
 
-    const scored = categoryFiltered.map((tool) => ({
-      tool,
-      score: scoreToolForTask(
-        {
-          categorySlug: tool.categorySlug,
-          categoryName: tool.category,
-          name: tool.name,
-          bestFor: tool.description,
-        },
-        query
-      ),
-    }));
+    const inputFor = (tool: FlatTool) => ({
+      categorySlug: tool.categorySlug,
+      categoryName: tool.category,
+      name: tool.name,
+      bestFor: tool.description,
+    });
 
-    const strict = scored
-      .filter(({ score }) => score >= MINIMUM_MATCH_SCORE)
-      .sort((a, b) => b.score - a.score);
+    // Use AI ranking when available, fall back to client-side scoring
+    const hasApiResults = apiRanking.size > 0;
+    const getScore = (tool: FlatTool): number => {
+      const api = apiRanking.get(tool.name);
+      if (api !== undefined) return api;
+      return combinedDirectoryRelevanceScore(inputFor(tool), query);
+    };
 
-    if (strict.length > 0) {
-      return {
-        directoryRows: strict.map(({ tool, score }) => ({ tool, score })),
-        searchHint: undefined,
-      };
+    const rankPool = (pool: FlatTool[]) =>
+      pool
+        .map((tool) => ({ tool, score: getScore(tool) }))
+        .sort((a, b) => b.score !== a.score ? b.score - a.score : a.tool.name.localeCompare(b.tool.name));
+
+    let ranked = rankPool(categoryFiltered);
+    let widenedToAll = false;
+
+    // If category filter produced no useful results, widen to all tools
+    if (activeCategory !== "all" && (ranked[0]?.score ?? 0) === 0) {
+      ranked = rankPool(ALL_TOOLS);
+      widenedToAll = true;
     }
 
-    const lexicalRanked = categoryFiltered
-      .map((tool) => ({
-        tool,
-        score: lexicalMatchScore(
-          {
-            categorySlug: tool.categorySlug,
-            categoryName: tool.category,
-            name: tool.name,
-            bestFor: tool.description,
-          },
-          query
-        ),
-      }))
-      .filter(({ score }) => score >= MINIMUM_LEXICAL_SCORE)
-      .sort((a, b) => b.score - a.score);
+    const topScore = ranked[0]?.score ?? 0;
+    const FALLBACK_TOP = 15;
 
-    if (lexicalRanked.length > 0) {
-      return {
-        directoryRows: lexicalRanked.map(({ tool, score }) => ({ tool, score })),
-        searchHint: "lexical" as const,
-      };
+    let searchHint: undefined | "weak" | "none" | "widened";
+    let rows: typeof ranked;
+
+    if (topScore === 0) {
+      searchHint = "none";
+      rows = ranked; // show everything so the grid is never empty
+    } else if (!hasApiResults && topScore < MINIMUM_MATCH_SCORE) {
+      // Only show "weak" hint when using client-side fallback scoring
+      searchHint = "weak";
+      rows = ranked.slice(0, FALLBACK_TOP);
+    } else {
+      searchHint = widenedToAll ? "widened" : undefined;
+      rows = ranked.filter(({ score }) => score > 0);
     }
 
     return {
-      directoryRows: categoryFiltered.map((tool) => ({ tool, score: undefined as number | undefined })),
-      searchHint: "all" as const,
+      directoryRows: rows.map(({ tool, score }) => ({
+        tool,
+        score: score > 0 ? score : undefined,
+      })),
+      searchHint,
     };
-  }, [query, activeCategory]);
+  }, [query, activeCategory, apiRanking]);
+
 
   return (
     <div className="min-h-screen bg-transparent">
@@ -260,7 +327,7 @@ function ToolsDirectoryPage(): React.JSX.Element {
                   </div>
 
                   {/* Search */}
-                  <div className="relative md:max-w-xs w-full">
+                  <div className="relative w-full md:max-w-xs">
                     <div className={cn(
                       "flex items-center h-11 bg-white/[0.03] border rounded-sm px-3 gap-2 transition-all duration-200",
                       rawQuery ? "border-white/30 bg-white/[0.05]" : "border-white/[0.08]",
@@ -271,15 +338,21 @@ function ToolsDirectoryPage(): React.JSX.Element {
                       </svg>
                       <input
                         ref={searchInputRef}
-                        type="text"
+                        type="search"
+                        enterKeyHint="search"
                         value={rawQuery}
                         onChange={(e) => setRawQuery(e.target.value)}
-                        placeholder='Search… (press "/" to focus)'
-                        className="flex-1 bg-transparent outline-none text-sm text-white/80 placeholder:text-white/35 font-body"
+                        placeholder="Describe your task…"
+                        className="flex-1 min-w-0 bg-transparent outline-none text-sm text-white/80 placeholder:text-white/35 font-body"
                       />
+                      {isSearching && rawQuery && (
+                        <span className="text-white/30 font-mono text-[9px] uppercase tracking-wider animate-pulse shrink-0">
+                          AI…
+                        </span>
+                      )}
                       {rawQuery && (
                         <button
-                          onClick={() => setRawQuery("")}
+                          onClick={() => { setRawQuery(""); setApiRanking(new Map()); }}
                           className="text-white/25 hover:text-white/50 transition-colors"
                         >
                           <svg className="w-3 h-3" fill="none" strokeWidth={2} stroke="currentColor" viewBox="0 0 24 24">
@@ -339,14 +412,19 @@ function ToolsDirectoryPage(): React.JSX.Element {
                       </span>
                     )}
                   </div>
-                  {query && searchHint === "lexical" && (
+                  {query && searchHint === "weak" && (
                     <p className="text-white/35 font-label text-[10px] uppercase tracking-widest max-w-2xl">
-                      Looser word match — try a more specific task for tighter ranking.
+                      Showing top results — try more specific terms for sharper matches.
                     </p>
                   )}
-                  {query && searchHint === "all" && (
+                  {query && searchHint === "none" && (
                     <p className="text-white/35 font-label text-[10px] uppercase tracking-widest max-w-2xl">
-                      No overlap with tool text — showing every tool in this view. Clear search or try other keywords.
+                      No close matches found — try different words or browse all tools below.
+                    </p>
+                  )}
+                  {query && searchHint === "widened" && (
+                    <p className="text-white/35 font-label text-[10px] uppercase tracking-widest max-w-2xl">
+                      No matches in this category — showing results across all categories.
                     </p>
                   )}
                 </motion.div>
