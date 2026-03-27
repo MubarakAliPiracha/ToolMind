@@ -4,7 +4,7 @@
 
 ToolMind is a curated, searchable directory of 90+ AI tools across 10 categories. Instead of trawling through listicles or asking "which AI is best for X?", you describe what you want to do and ToolMind surfaces the tools that actually fit — ranked by how well they match your intent.
 
-Live at → [**[toolmind.vercel.app](https://toolmind.vercel.app)**](https://tool-mind.vercel.app/) _(replace with your URL)_
+Live at →(https://tool-mind.vercel.app/)
 
 ---
 
