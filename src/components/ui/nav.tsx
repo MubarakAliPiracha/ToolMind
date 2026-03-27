@@ -32,13 +32,13 @@ export function Nav(): React.JSX.Element {
         </Link>
 
         {/* Center links */}
-        <div className="hidden md:flex items-center gap-6">
+        <div className="flex items-center gap-4 md:gap-6">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               className={cn(
-                "text-[11px] tracking-[0.15em] transition-colors duration-150 font-label uppercase",
+                "text-[10px] md:text-[11px] tracking-[0.12em] md:tracking-[0.15em] transition-colors duration-150 font-label uppercase whitespace-nowrap",
                 isActive(link.href)
                   ? "text-white font-medium"
                   : "text-white/40 hover:text-white/80"

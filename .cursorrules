@@ -1,0 +1,94 @@
+# ToolMind — AI Tools Directory
+
+## What this is
+ToolMind is an AI tools directory web app. Users describe 
+a task and instantly find the best AI tool for it.
+Search, browse by category, compare tools side by side.
+
+## Tech stack
+- Next.js 14 App Router
+- TypeScript strict mode
+- Tailwind CSS
+- Supabase (database + auth)
+- Framer Motion (animations)
+- Phosphor Icons (weight="thin" only)
+- Geist + Geist Mono fonts
+
+## Design system
+- Background: #fafaf9 (off-white)
+- Text: #0f0f0e (near-black)
+- Border: 1px solid #e5e5e5
+- Accent: #0f0f0e
+- Card background: #ffffff
+- Muted text: #6b6b6b
+- FREE badge: bg #f0fdf4 text #166534
+- FREEMIUM badge: bg #eff6ff text #1d4ed8
+- PAID badge: bg #f9fafb text #374151
+- Zero shadows anywhere — borders only
+- Geist Display for headlines
+- Geist Mono for tags, labels, prices
+- Framer Motion on every page entrance
+- Staggered fade-up, 0.6s ease out
+
+## Folder structure
+app/
+  page.tsx — homepage with search
+  search/page.tsx — search results
+  tools/page.tsx — full directory
+  tools/[slug]/page.tsx — tool detail
+  compare/page.tsx — side by side compare
+  category/[slug]/page.tsx — category view
+components/
+  ui/
+    nav.tsx — floating pill navigation
+    tool-card.tsx — tool card component
+    search-bar.tsx — animated search bar
+    category-pill.tsx — category filter pill
+    pricing-badge.tsx — FREE/FREEMIUM/PAID
+lib/
+  supabase/
+    client.ts — browser client
+    server.ts — server component client
+  data/
+    categories.ts — category + tool seed data
+styles/
+  globals.css — CSS variables
+
+## Database tables
+categories: id, name, slug, description, tool_count
+tools: id, name, slug, description, website_url, 
+       logo_url, category_id, pricing_tier, 
+       best_for[], tags[], rating, verified
+tool_tasks: id, tool_id, task, match_score
+
+## Key behaviors
+- Search queries Supabase full text across 
+  name, description, tags, best_for
+- Category pages filter tools by category_id
+- Compare page reads ?tools=slug1,slug2 from URL
+- Task pills on homepage link to /search?q=task
+- Tool cards link to /tools/[slug]
+- "Visit Tool" button opens website_url
+
+## Code rules
+- Never use any type
+- No inline styles — Tailwind only
+- Every client component needs 'use client'
+- Use next/image for all images
+- Handle loading and error states always
+- Mobile responsive — all breakpoints
+- No console.log in production code
+- Components max 150 lines, split if longer
+
+## Icon rules
+- Phosphor icons only, weight="thin"
+- Arrows use → ↗ text symbols
+- Category codes: W_ <> [] |> ~_ ?_ ## @_ (); 
+- No lucide-react anywhere
+
+## Agent behavior
+- Never ask for permission
+- Execute everything completely
+- Make best judgment on ambiguous decisions
+- Fix all TypeScript errors before finishing
+- Run npm run dev to verify after changes
