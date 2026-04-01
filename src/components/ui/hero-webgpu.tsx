@@ -159,20 +159,39 @@ function Scene() {
 
 // ── Main export — canvas only, meant to sit behind hero content ───────────────
 
-export default function HeroWebGPU(): React.JSX.Element {
+export default function HeroWebGPU(): React.JSX.Element | null {
+  const [supported, setSupported] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    setSupported(typeof navigator !== "undefined" && "gpu" in navigator);
+  }, []);
+
+  if (!supported) return null;
+
   return (
     <Canvas
       flat
       style={{ background: "transparent" }}
       gl={async (props) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const renderer = new (THREE as any).WebGPURenderer({
-          ...(props as object),
-          antialias: true,
-          alpha: true,
-        });
-        await renderer.init();
-        return renderer;
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const renderer = new (THREE as any).WebGPURenderer({
+            ...(props as object),
+            antialias: true,
+            alpha: true,
+          });
+          await renderer.init();
+          return renderer;
+        } catch {
+          // WebGPU init failed — return a plain WebGL renderer as fallback
+          const { WebGLRenderer } = await import("three");
+          const fallback = new WebGLRenderer({
+            ...(props as object),
+            antialias: true,
+            alpha: true,
+          });
+          return fallback;
+        }
       }}
     >
       <PostProcessing strength={0.8} threshold={0.9} />

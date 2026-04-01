@@ -124,6 +124,9 @@ export function HeroFuturistic(): React.JSX.Element {
     "The world\u2019s most curated AI tool directory.\nDescribe your task \u2014 we surface the perfect tool.";
   const [visibleWords, setVisibleWords] = useState(0);
   const [subtitleVisible, setSubtitleVisible] = useState(false);
+  const [splineTimedOut, setSplineTimedOut] = useState(false);
+  const [splineLoaded, setSplineLoaded] = useState(false);
+  const splineTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (visibleWords < titleWords.length) {
@@ -135,6 +138,17 @@ export function HeroFuturistic(): React.JSX.Element {
     }
   }, [visibleWords, titleWords.length]);
 
+  // Give Spline 12s to load before hiding it — prevents page hang on slow networks
+  useEffect(() => {
+    splineTimeoutRef.current = setTimeout(() => {
+      if (!splineLoaded) setSplineTimedOut(true);
+    }, 12000);
+    return () => {
+      if (splineTimeoutRef.current) clearTimeout(splineTimeoutRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <section className="relative w-full h-[100vh] min-h-[600px] overflow-hidden bg-[#050505] pt-24">
       {/* Animated dot grid */}
@@ -143,8 +157,15 @@ export function HeroFuturistic(): React.JSX.Element {
       {/* Scan line */}
       <ScanLine />
 
-      {/* Spline 3D robot — large, face visible in upper-center */}
-      <div className="absolute inset-0 z-[3] flex items-center justify-center pointer-events-none overflow-visible">
+      {/* Spline 3D robot — hidden after timeout to prevent page hang */}
+      <div
+        className="absolute inset-0 z-[3] flex items-center justify-center pointer-events-none overflow-visible"
+        style={{
+          opacity: splineTimedOut ? 0 : 1,
+          transition: "opacity 0.5s ease",
+          pointerEvents: splineTimedOut ? "none" : undefined,
+        }}
+      >
         <div
           className="pointer-events-auto shrink-0 translate-y-[12%]"
           style={{
@@ -154,7 +175,14 @@ export function HeroFuturistic(): React.JSX.Element {
             minHeight: "min(90vw, 700px)",
           }}
         >
-          <SplineScene scene={SPLINE_URL} className="h-full w-full" />
+          <SplineScene
+            scene={SPLINE_URL}
+            className="h-full w-full"
+            onLoad={() => {
+              setSplineLoaded(true);
+              if (splineTimeoutRef.current) clearTimeout(splineTimeoutRef.current);
+            }}
+          />
         </div>
       </div>
 
